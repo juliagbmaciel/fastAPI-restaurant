@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from db import Restaurantes
-from db import Pratos
-from models import RestaurantesModel
-from db import engine
+from models import Restaurantes
+from models import Pratos
+from schemas import RestaurantesModel, PratosModel
+from models import engine
 from sqlalchemy.orm import Session
 
 
@@ -46,12 +46,12 @@ session = Session(bind=engine)
 # ]
 
 # pratos = [
-#     {
-#         "nome": "Prato tal",
-#         "descricao": "desc tal",
-#         "preco": 20.00,
-#         "id_restaurante": 1
-#     },
+    # {
+    #     "nome": "Prato tal",
+    #     "descricao": "desc tal",
+    #     "preco": 20.00,
+    #     "id_restaurante": 1
+    # },
 #     {
 #         "nome": "Prato tal",
 #         "descricao": "desc tal",
@@ -70,17 +70,75 @@ async def get_restaurants():
 
 @app.get('/restaurant/{id}')
 async def get_restaurant_by_id(id: int):
-    print(id)
     restaurante = session.query(Restaurantes).filter_by(id = id).first()
-    print(restaurante)
+
+    if not restaurante:
+        raise HTTPException(status_code=404, detail=f"Restaurante com o id {id} não foi encontrado!")
+    
+    return restaurante
+
+
+@app.post('/restaurant')
+async def create_restaurant(restaurante: RestaurantesModel):
+    novo_restaurante= Restaurantes(nome=restaurante.nome, descricao=restaurante.descricao, local=restaurante.local,
+                                    imagem=restaurante.imagem, avaliacao=restaurante.avaliacao)
+
+    session.add(novo_restaurante)
+    session.commit()
+    session.refresh(novo_restaurante)
+
     return restaurante
 
 
 
-# @app.get('/food')
-# async def get_foods():
-#     pratos = session.query(Pratos).all()
-#     return pratos
+@app.put('/restaurant/{id}')
+async def update_restaurant(id: int, restaurante: RestaurantesModel):
+    restaurante_banco = session.query(Restaurantes).get(id)
+    
+    if restaurante_banco:
+        atributos_para_atualizar = ['nome', 'descricao', 'avaliacao', 'local', 'imagem']
+        for atributo in atributos_para_atualizar:
+            setattr(restaurante_banco, atributo, getattr(restaurante, atributo))
+        
+        session.commit()
+
+        restaurante_atualizado = session.query(Restaurantes).get(id)
+    
+    if not restaurante_banco:
+        raise HTTPException(status_code=404, detail=f"restaurante com o id {id} não encontrado")
+
+
+    return restaurante_atualizado
+
+
+
+@app.get('/food')
+async def get_foods():
+    pratos = session.query(Pratos).all()
+    return pratos
+
+
+@app.get('/food/{id}')
+async def get_foods(id: int):
+    prato = session.query(Pratos).filter_by(id = id).first()
+
+    if not prato:
+        raise HTTPException(status_code=404, detail=f"Prato com o id {id} não foi encontrado!")
+    
+    return prato
+    
+
+@app.post('/food')
+async def create_food(prato: PratosModel):
+    novo_prato= Pratos(nome=prato.nome, descricao=prato.descricao, preco=prato.preco,
+                                    id_restaurante=prato.id_restaurante)
+
+    session.add(novo_prato)
+    session.commit()
+    session.refresh(novo_prato)
+
+    return novo_prato
+
 
 
 # @app.get('/restaurant/{id_restaurant}/food/{id_food}')
@@ -95,18 +153,7 @@ async def get_restaurant_by_id(id: int):
 
 
 
-@app.post('/create_restaurant')
-async def create_restaurant(restaurante: RestaurantesModel):
-    try:
-        novo_restaurante= Restaurantes(nome=restaurante.nome, descricao=restaurante.descricao, local=restaurante.local,
-                                       imagem=restaurante.imagem, avaliacao=restaurante.avaliacao)
 
-        session.add(novo_restaurante)
-        session.commit()
-
-        return restaurante
-    except:
-        return "Algo deu errado"
 
 
 
