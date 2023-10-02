@@ -5,7 +5,7 @@ from models import Pratos
 from schemas import RestaurantesModel, PratosModel
 from models import engine
 from sqlalchemy.orm import Session
-
+import requests
 
 app = FastAPI()
 
@@ -93,6 +93,7 @@ async def create_restaurant(restaurante: RestaurantesModel):
 
 @app.put('/restaurant/{id}')
 async def update_restaurant(id: int, restaurante: RestaurantesModel):
+    global restaurante_atualizado
     restaurante_banco = session.query(Restaurantes).get(id)
     
     if restaurante_banco:
@@ -138,6 +139,29 @@ async def create_food(prato: PratosModel):
     session.refresh(novo_prato)
 
     return novo_prato
+
+@app.get('/food_by_restaurant/{id}')
+async def food_by_restaurant(id: int):
+    prato = session.query(Pratos).filter_by(id_restaurante = id).all()
+
+    if not prato:
+        raise HTTPException(status_code=404, detail=f"Restaurante com o id {id} não foi encontrado!")
+
+    return prato
+
+@app.get('/calorie_per_food/{food}')
+async def calorie_per_food(food: str):
+    url = f"https://caloriasporalimentoapi.herokuapp.com/api/calorias/?descricao={food}"
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        return data
+    else:
+        return "A requisição falhou com o código de status:", response.status_code
+
+
+
 
 
 
