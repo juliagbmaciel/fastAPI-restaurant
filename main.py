@@ -137,6 +137,15 @@ async def get_one_question(num: int):
         return "A requisição falhou com o código de status:", response.status_code
 
 
+@app.delete('/api/v1/restaurants/{id}/')
+async def delete_restaurant(id: int):
+    restaurant = session.query(Restaurantes).filter_by(id=id).first()
+    if restaurant is None:
+        raise HTTPException(404, f"Não encontrei nenhum restaurant: {id}")
+
+    session.delete(restaurant)
+    session.commit()
+    return Response(status_code=200)
 
 if __name__ == "__main__":
     import uvicorn
