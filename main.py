@@ -23,52 +23,17 @@ app.add_middleware(
 session = Session(bind=engine)
 
 
+@app.get('/')
+async def initial():
+    return "Bem vindo a minha API :)"
 
-
-#
-# restaurantes = [
-#     {
-#         "nome": "Jangada Restaurante",
-#         "descricao": "Restaurante bom da peste",
-#         "local": "Campinas - SP",
-#         "avaliacao": 5,
-#         "image": "https://www.restaurantejangada.com.br/wp-content/uploads/2019/06/campinas3-1024x683.jpg",
-#         "id": 1
-#     },
-#      {
-#         "nome": "Jangada Restaurante 2",
-#         "descricao": "Restaurante bom da peste",
-#         "local": "Campinas - SP",
-#         "avaliacao": 5,
-#         "image": "https://www.restaurantejangada.com.br/wp-content/uploads/2019/06/campinas3-1024x683.jpg",
-#          "id": 2
-#     }
-# ]
-
-# pratos = [
-    # {
-    #     "nome": "Prato tal",
-    #     "descricao": "desc tal",
-    #     "preco": 20.00,
-    #     "id_restaurante": 1
-    # },
-#     {
-#         "nome": "Prato tal",
-#         "descricao": "desc tal",
-#         "preco": 20.00,
-#         "id_restaurante": 2
-#     }
-#
-# ]
-
-
-@app.get('/restaurants')
+@app.get('/api/restaurants')
 async def get_restaurants():
     restaurantes = session.query(Restaurantes).all()
     return restaurantes
 
 
-@app.get('/restaurant/{id}')
+@app.get('/api/restaurants/restaurant/{id}')
 async def get_restaurant_by_id(id: int):
     restaurante = session.query(Restaurantes).filter_by(id = id).first()
 
@@ -78,7 +43,7 @@ async def get_restaurant_by_id(id: int):
     return restaurante
 
 
-@app.post('/restaurant')
+@app.post('/api/restaurants/restaurant')
 async def create_restaurant(restaurante: RestaurantesModel):
     novo_restaurante= Restaurantes(nome=restaurante.nome, descricao=restaurante.descricao, local=restaurante.local,
                                     imagem=restaurante.imagem, avaliacao=restaurante.avaliacao)
@@ -91,7 +56,7 @@ async def create_restaurant(restaurante: RestaurantesModel):
 
 
 
-@app.put('/restaurant/{id}')
+@app.put('/api/restaurants/restaurant/{id}')
 async def update_restaurant(id: int, restaurante: RestaurantesModel):
     global restaurante_atualizado
     restaurante_banco = session.query(Restaurantes).get(id)
@@ -113,13 +78,13 @@ async def update_restaurant(id: int, restaurante: RestaurantesModel):
 
 
 
-@app.get('/food')
-async def get_foods():
+@app.get('api/foods/food')
+async def get_all_foods():
     pratos = session.query(Pratos).all()
     return pratos
 
 
-@app.get('/food/{id}')
+@app.get('api/foods/food/{id}')
 async def get_foods(id: int):
     prato = session.query(Pratos).filter_by(id = id).first()
 
@@ -129,7 +94,7 @@ async def get_foods(id: int):
     return prato
     
 
-@app.post('/food')
+@app.post('api/foods/food')
 async def create_food(prato: PratosModel):
     novo_prato= Pratos(nome=prato.nome, descricao=prato.descricao, preco=prato.preco,
                                     id_restaurante=prato.id_restaurante)
@@ -140,7 +105,7 @@ async def create_food(prato: PratosModel):
 
     return novo_prato
 
-@app.get('/food_by_restaurant/{id}')
+@app.get('api/foods/food_by_restaurant/{id}')
 async def food_by_restaurant(id: int):
     prato = session.query(Pratos).filter_by(id_restaurante = id).all()
 
@@ -149,7 +114,7 @@ async def food_by_restaurant(id: int):
 
     return prato
 
-@app.get('/calorie_per_food/{food}')
+@app.get('api/foods/calorie_per_food/{food}')
 async def calorie_per_food(food: str):
     url = f"https://caloriasporalimentoapi.herokuapp.com/api/calorias/?descricao={food}"
 
@@ -160,31 +125,20 @@ async def calorie_per_food(food: str):
     else:
         return "A requisição falhou com o código de status:", response.status_code
 
+@app.get('api/quiz/{num}')
+async def get_one_question(num: int):
+    url = f"http://192.168.88.114:8000/questions/{num}"
 
-
-
-
-
-# @app.get('/restaurant/{id_restaurant}/food/{id_food}')
-# async def get_food_by_rest_by_idfood(id_restaurant: int, id_food: int):
-#     prato_correto = ''
-#     for prato in pratos.items():
-#         if prato[1]['id_restaurante'] == id_restaurant:
-#             if prato[0] == id_food:
-#                 prato_correto = prato
-#
-#     return prato_correto
-
-
-
-
-
-
-
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        return data
+    else:
+        return "A requisição falhou com o código de status:", response.status_code
 
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host='127.0.0.1', port=8001, log_level="info", reload=True)
+    uvicorn.run("main:app", host='0.0.0.0', port=8000, log_level="info", reload=True)
